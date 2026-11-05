@@ -32,8 +32,9 @@ mode are its own settings, not facts about the original setup.
 - It accepts every frame and does not decode anything. Each frame goes to the phone as one text
   line, `millis,id,length,data`. For example (made-up values), a frame with ID 0x1A0 and the
   data bytes 01 to 08, received 1532 ms after start-up, is sent as
-  `1532,1A0,8,0102030405060708`. The same line is also printed on the USB serial port at
-  115200 baud.
+  `1532,1A0,8,0102030405060708`. A remote frame has no data bytes, so its line ends in `R`
+  instead. The same line is also printed on the USB serial port at 115200 baud. That copy is
+  the slowest step, so on a very busy bus some frames can be lost.
 - The phone pairs with the Bluetooth name `ebike-can`. The sketch uses Classic Bluetooth serial
   (the `BluetoothSerial` library), so it needs a chip with Classic Bluetooth, such as the
   original ESP32. The ESP32-S3 and ESP32-C3 have Bluetooth LE only.

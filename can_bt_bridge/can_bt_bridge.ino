@@ -2,6 +2,7 @@
 // Rewritten in 2026 for this repo. Not the original sketch.
 //
 // Every frame is sent to the phone as one line: millis,id,length,data
+// (a remote frame has no data, so its line ends in R)
 
 #include "driver/twai.h"
 #include "BluetoothSerial.h"
@@ -17,6 +18,7 @@ void setup() {
 
   // listen only: never transmit, never acknowledge
   twai_general_config_t g = TWAI_GENERAL_CONFIG_DEFAULT(CAN_TX, CAN_RX, TWAI_MODE_LISTEN_ONLY);
+  g.rx_queue_len = 32;  // the default 5 overflows while a line is printed
   twai_timing_config_t t = TWAI_TIMING_CONFIG_250KBITS();  // must match the bus
   twai_filter_config_t f = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
@@ -36,8 +38,13 @@ void loop() {
   char line[64];
   int n = snprintf(line, sizeof(line), "%lu,%lX,%d,",
                    millis(), (unsigned long)msg.identifier, msg.data_length_code);
-  for (int i = 0; i < msg.data_length_code; i++) {
-    n += snprintf(line + n, sizeof(line) - n, "%02X", msg.data[i]);
+  if (msg.rtr) {
+    snprintf(line + n, sizeof(line) - n, "R");  // remote frame: no data bytes
+  } else {
+    int len = msg.data_length_code > 8 ? 8 : msg.data_length_code;  // a DLC of 9 to 15 still means 8 bytes
+    for (int i = 0; i < len; i++) {
+      n += snprintf(line + n, sizeof(line) - n, "%02X", msg.data[i]);
+    }
   }
 
   bt.println(line);
